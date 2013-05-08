@@ -28,6 +28,8 @@
 struct private{
 
 	/* ANJUTA: Widgets declaration for gtk_foobar.ui - DO NOT REMOVE */
+	GtkWidget* comboboxtext_entry;
+	GtkWidget* comboboxtext2;
 	GtkWidget* entry1;
 	GtkWidget* entrybuffer1;
 	GtkWidget* on_off_button;
@@ -40,6 +42,7 @@ struct private{
 static struct private* priv = NULL;
 
 GCancellable *mainCanceller;
+//char cancelFlag;
 
 /* For testing propose use the local (not installed) ui file */
 /* #define UI_FILE PACKAGE_DATA_DIR"/ui/gtk_foobar.ui" */
@@ -59,66 +62,148 @@ destroy (GtkWidget *widget, gpointer data)
 	gtk_main_quit ();
 }
 
+gboolean displayError(gpointer data)
+{
+	GError *USBerror;
+	USBerror = (GError *) data;
+	
+	gtk_entry_buffer_set_text ((GtkEntryBuffer*)priv->entrybuffer1, USBerror->message, -1);
+	gtk_toggle_button_set_active((GtkToggleButton*)priv->on_off_button,
+		                             FALSE);
+	gtk_entry_set_icon_from_stock ((GtkEntry*)priv->entry1, GTK_ENTRY_ICON_PRIMARY, "gtk-dialog-error");
+
+	return FALSE;
+}
+
+gboolean displayPlayIcon(gpointer data)
+{
+	//gtk_entry_buffer_set_text (priv->entrybuffer1, "Tracking!", -1);	
+	gtk_entry_set_icon_from_stock ((GtkEntry*)priv->entry1, GTK_ENTRY_ICON_PRIMARY, "gtk-media-play");
+	gtk_entry_buffer_set_text ((GtkEntryBuffer*)priv->entrybuffer1, "Device OK!", -1);
+	return FALSE;
+}
+
+gboolean displayIdle(gpointer data)
+{
+	gtk_toggle_button_set_active ((GtkToggleButton*)priv->on_off_button, FALSE);
+	gtk_entry_set_icon_from_stock ((GtkEntry*)priv->entry1, 
+			                       GTK_ENTRY_ICON_PRIMARY, 
+			                       "gtk-about");
+	gtk_entry_buffer_set_text ((GtkEntryBuffer*)priv->entrybuffer1, 
+	                           "Choose a USB ACM device from combo box and press activate.",
+	                           -1);
+
+	return FALSE;
+}
+
+gboolean displayDisconnect(gpointer data)
+{
+	gtk_toggle_button_set_active ((GtkToggleButton*)priv->on_off_button, FALSE);
+	gtk_entry_set_icon_from_stock ((GtkEntry*)priv->entry1, 
+			                       GTK_ENTRY_ICON_PRIMARY, 
+			                       "gtk-dialog-error");
+	gtk_entry_buffer_set_text ((GtkEntryBuffer*)priv->entrybuffer1, 
+	                           "Device disconnected.",
+	                           -1);
+
+	return FALSE;
+}
+
+gpointer
+doCancel(gpointer data)
+{
+	g_cancellable_cancel (mainCanceller);
+
+	return NULL;
+}
+
 gpointer
 textviewFiller(gpointer data)
 {
+	static GFileInputStream* USBsinkInStream;
+	
 	GError* USBerror = NULL;
 	GDataInputStream* USBsinkDataInStream; 
+	gsize linesize;
+	gchar* linedata = NULL;
+	GFile* USBsink;	
 
-	USBsinkDataInStream = g_data_input_stream_new (data);
-	gtk_entry_buffer_set_text (priv->entrybuffer1, "Tracking!", -1);
-	gtk_entry_set_icon_from_stock (priv->entry1, GTK_ENTRY_ICON_PRIMARY, "gtk-media-play");
-		//while()
+	USBsink = g_file_new_for_path (gtk_combo_box_text_get_active_text((GtkComboBoxText*)priv->comboboxtext2));
+	USBsinkInStream = g_file_read (USBsink, NULL, &USBerror);
+
+	if(USBerror != NULL){
+		gdk_threads_add_idle (displayError, USBerror);
+		
+		return NULL;
+	}
 	
+	USBsinkDataInStream = g_data_input_stream_new ((GInputStream*)USBsinkInStream);
+
+	gdk_threads_add_idle (displayPlayIcon, NULL);
+	
+	do{
+		linedata = g_data_input_stream_read_line (USBsinkDataInStream, &linesize, mainCanceller, &USBerror);
+		//g_printf("%d", linesize);
+		if(!g_cancellable_is_cancelled(mainCanceller) && linedata != NULL){
+			gdk_threads_enter();
+			gtk_text_buffer_insert_at_cursor((GtkTextBuffer*)priv->textbuffer1, 
+	                     					linedata,
+		                     				linesize);
+			gdk_threads_leave();
+		}
+	}while(USBerror == NULL && linesize != 0 );
+
+	if(USBerror != NULL){
+		g_fprintf(stderr, "%s", USBerror->message);
+	}
+
+	if(linesize == 0){
+		gdk_threads_add_idle (displayDisconnect,NULL);
+	}
+	else{
+		gdk_threads_add_idle (displayIdle, NULL);
+	}
+	
+	g_input_stream_close (USBsinkInStream, NULL, NULL);
+	
+	return NULL;
 	
 }
 
 void
-doToggle (GtkWidget *widget, gpointer data)
+doClick (GtkWidget *widget, gpointer data)
 {
-	static GFileInputStream* USBsinkInStream;
 	
-	gsize textsize;
-	GFile* USBsink;
-	GError* USBerror = NULL;
+	//static GThread* textFillerThread = NULL;
 	
-	if(gtk_toggle_button_get_active (priv->on_off_button)){
-		const GdkRGBA green = {0.0,1.0,0.0,0.5};
-
-		
+	if(gtk_toggle_button_get_active ((GtkToggleButton*)priv->on_off_button)){
+		const GdkRGBA green = {0.0,1.0,0.0,0.1};
+	
 		g_printf("On!");	
+
+		g_cancellable_reset (mainCanceller);
+
 		gtk_text_buffer_set_text((GtkTextBuffer*)priv->textbuffer1, 
-	                     	   "你好!",
+	                    	     "Start!\r\n",
 		                         -1);
 		gtk_widget_override_background_color(priv->textview1, 
 		                                     GTK_STATE_FLAG_NORMAL,
 		                                     &green);
-		
-		USBsink = g_file_new_for_path (gtk_entry_buffer_get_text (priv->entrybuffer1));
-		USBsinkInStream = g_file_read (USBsink, NULL, &USBerror);
 
-		if(USBerror != NULL){
-			gtk_entry_buffer_set_text (priv->entrybuffer1, USBerror->message, -1);
-			gtk_toggle_button_set_active((GtkToggleButton*)priv->on_off_button,
-		                             FALSE);
-			gtk_entry_set_icon_from_stock (priv->entry1, GTK_ENTRY_ICON_PRIMARY, "gtk-dialog-error");
-			return;
-		}
-		
-		
-		g_thread_new ("Text View Filler", textviewFiller, USBsinkInStream);
+		g_thread_new ("Text View Filler", textviewFiller, NULL);
 		
 	}
 	else{
-		const GdkRGBA red = {1.0,0.0,0.0,0.5};
+		const GdkRGBA red = {1.0,0.0,0.0,0.1};
 		g_printf("Off!");
+
 		gtk_text_buffer_set_text((GtkTextBuffer*)priv->textbuffer1, 
-	                     	   "再见!",
+	                     	   "Stop!\r\n",
 	                     	   -1);
 		gtk_widget_override_background_color(priv->textview1, 
 		                                     GTK_STATE_FLAG_NORMAL,
 		                                     &red);
-		g_input_stream_close (USBsinkInStream, NULL, NULL);
+		g_thread_new ("Cancel", doCancel, NULL); 
 	}
 	
 	fflush(stdout);
@@ -153,9 +238,11 @@ create_window (void)
 				UI_FILE);
         }
 
-	priv = malloc(sizeof(struct private));
+	priv = g_malloc(sizeof(struct private));
 	
 	/* ANJUTA: Widgets initialization for gtk_foobar.ui - DO NOT REMOVE */
+	priv->comboboxtext_entry = GTK_WIDGET (gtk_builder_get_object(builder, "comboboxtext_entry"));
+	priv->comboboxtext2 = GTK_WIDGET (gtk_builder_get_object(builder, "comboboxtext2"));
 	priv->entry1 = GTK_WIDGET (gtk_builder_get_object(builder, "entry1"));
 	priv->entrybuffer1 = GTK_WIDGET (gtk_builder_get_object(builder, "entrybuffer1"));
 	priv->on_off_button = GTK_WIDGET (gtk_builder_get_object(builder, "on_off_button"));
@@ -164,6 +251,8 @@ create_window (void)
 	priv->textbuffer1 = GTK_WIDGET (gtk_builder_get_object(builder, "textbuffer1"));
 	
 	g_object_unref (builder);
+
+	gtk_combo_box_set_active((GtkComboBox*)priv->comboboxtext2,0);
 	
 	return window;
 }
@@ -181,13 +270,17 @@ main (int argc, char *argv[])
 	textdomain (GETTEXT_PACKAGE);
 #endif
 
-	
+		
 	gtk_init (&argc, &argv);
 
 	window = create_window ();
 	gtk_widget_show (window);
+
+	mainCanceller = g_cancellable_new ();
 	
+	gdk_threads_enter();
 	gtk_main ();
+	gdk_threads_leave();
 	
 	g_free(priv);
 

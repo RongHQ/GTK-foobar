@@ -29,7 +29,6 @@ struct private{
 
 	/* ANJUTA: Widgets declaration for gtk_foobar.ui - DO NOT REMOVE */
 	GtkWidget* comboboxtext_entry;
-	GtkWidget* entrybuffer2;
 	GtkWidget* comboboxtext2;
 	GtkWidget* entry1;
 	GtkWidget* entrybuffer1;
@@ -165,7 +164,7 @@ textviewFiller(gpointer data)
 		gdk_threads_add_idle (displayIdle, NULL);
 	}
 	
-	g_input_stream_close (USBsinkInStream, NULL, &USBerror);
+	g_input_stream_close (USBsinkInStream, NULL, NULL);
 	
 	return NULL;
 	
@@ -178,7 +177,7 @@ doClick (GtkWidget *widget, gpointer data)
 	//static GThread* textFillerThread = NULL;
 	
 	if(gtk_toggle_button_get_active ((GtkToggleButton*)priv->on_off_button)){
-		const GdkRGBA green = {0.0,1.0,0.0,0.5};
+		const GdkRGBA green = {0.0,1.0,0.0,0.2};
 	
 		g_printf("On!");	
 
@@ -195,7 +194,7 @@ doClick (GtkWidget *widget, gpointer data)
 		
 	}
 	else{
-		const GdkRGBA red = {1.0,0.0,0.0,0.5};
+		const GdkRGBA red = {1.0,0.0,0.0,0.2};
 		g_printf("Off!");
 
 		gtk_text_buffer_set_text((GtkTextBuffer*)priv->textbuffer1, 
@@ -243,7 +242,6 @@ create_window (void)
 	
 	/* ANJUTA: Widgets initialization for gtk_foobar.ui - DO NOT REMOVE */
 	priv->comboboxtext_entry = GTK_WIDGET (gtk_builder_get_object(builder, "comboboxtext_entry"));
-	priv->entrybuffer2 = GTK_WIDGET (gtk_builder_get_object(builder, "entrybuffer2"));
 	priv->comboboxtext2 = GTK_WIDGET (gtk_builder_get_object(builder, "comboboxtext2"));
 	priv->entry1 = GTK_WIDGET (gtk_builder_get_object(builder, "entry1"));
 	priv->entrybuffer1 = GTK_WIDGET (gtk_builder_get_object(builder, "entrybuffer1"));
@@ -254,7 +252,7 @@ create_window (void)
 	
 	g_object_unref (builder);
 
-	//gtk_combo_box_set_active((GtkComboBox*)priv->comboboxtext2,0);
+	gtk_combo_box_set_active((GtkComboBox*)priv->comboboxtext2,0);
 	
 	return window;
 }
