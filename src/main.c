@@ -129,7 +129,7 @@ textviewFiller(gpointer data)
 	gchar* linedata = NULL;
 	GFile* USBsink;	
 
-	unsigned char addr[2], reported[8];
+	unsigned int addr[2], reported[8];
 	char status_char = 0;
 
 	USBsink = g_file_new_for_path (gtk_combo_box_text_get_active_text((GtkComboBoxText*)priv->comboboxtext2));
