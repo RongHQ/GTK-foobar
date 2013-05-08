@@ -28,6 +28,7 @@
 struct private{
 
 	/* ANJUTA: Widgets declaration for gtk_foobar.ui - DO NOT REMOVE */
+	GtkWidget* spinner1;
 	GtkWidget* comboboxtext_entry;
 	GtkWidget* comboboxtext2;
 	GtkWidget* entry1;
@@ -128,6 +129,9 @@ textviewFiller(gpointer data)
 	gchar* linedata = NULL;
 	GFile* USBsink;	
 
+	unsigned char addr[2], reported[8];
+	char status_char = 0;
+
 	USBsink = g_file_new_for_path (gtk_combo_box_text_get_active_text((GtkComboBoxText*)priv->comboboxtext2));
 	USBsinkInStream = g_file_read (USBsink, NULL, &USBerror);
 
@@ -149,7 +153,25 @@ textviewFiller(gpointer data)
 			gtk_text_buffer_insert_at_cursor((GtkTextBuffer*)priv->textbuffer1, 
 	                     					linedata,
 		                     				linesize);
+
+			if(g_str_has_prefix(linedata, "Sync")){
+				status_char = 0;
+			}
+			else{
+				   
+				sscanf(linedata, "%2x%2x:%2x%2x%2x%2x%2x%2x%2x%2x", 
+					   &addr[0], &addr[1], 
+				       &reported[0], &reported[1], &reported[2], &reported[3],
+				       &reported[4], &reported[5], &reported[6], &reported[7]);
+				status_char++;
+				
+			}
+			
 			gdk_threads_leave();
+			
+			g_printf("%d %d.%d", status_char, addr[0], addr[1]);
+			g_printf("%x",reported[7]);
+			fflush(stdout);
 		}
 	}while(USBerror == NULL && linesize != 0 );
 
@@ -190,6 +212,8 @@ doClick (GtkWidget *widget, gpointer data)
 		                                     GTK_STATE_FLAG_NORMAL,
 		                                     &green);
 
+		gtk_spinner_start (priv->spinner1);
+		
 		g_thread_new ("Text View Filler", textviewFiller, NULL);
 		
 	}
@@ -203,6 +227,9 @@ doClick (GtkWidget *widget, gpointer data)
 		gtk_widget_override_background_color(priv->textview1, 
 		                                     GTK_STATE_FLAG_NORMAL,
 		                                     &red);
+
+		gtk_spinner_stop (priv->spinner1);
+		
 		g_thread_new ("Cancel", doCancel, NULL); 
 	}
 	
@@ -241,6 +268,7 @@ create_window (void)
 	priv = g_malloc(sizeof(struct private));
 	
 	/* ANJUTA: Widgets initialization for gtk_foobar.ui - DO NOT REMOVE */
+	priv->spinner1 = GTK_WIDGET (gtk_builder_get_object(builder, "spinner1"));
 	priv->comboboxtext_entry = GTK_WIDGET (gtk_builder_get_object(builder, "comboboxtext_entry"));
 	priv->comboboxtext2 = GTK_WIDGET (gtk_builder_get_object(builder, "comboboxtext2"));
 	priv->entry1 = GTK_WIDGET (gtk_builder_get_object(builder, "entry1"));
@@ -253,6 +281,7 @@ create_window (void)
 	g_object_unref (builder);
 
 	gtk_combo_box_set_active((GtkComboBox*)priv->comboboxtext2,0);
+	gtk_spinner_stop (priv->spinner1);
 	
 	return window;
 }
@@ -277,6 +306,8 @@ main (int argc, char *argv[])
 	gtk_widget_show (window);
 
 	mainCanceller = g_cancellable_new ();
+
+	gdk_threads_init();
 	
 	gdk_threads_enter();
 	gtk_main ();
