@@ -5,27 +5,15 @@
     <property name="text" translatable="yes">Choose a USB ACM device from combo box and press activate.</property>
   </object>
   <object class="GtkTextBuffer" id="textbuffer1">
-    <property name="text" translatable="yes">Hello!
+    <property name="text" translatable="yes">
+Beijing University of Posts and Telecommunications
+Queen Mary, University of London
+
+Final Year Project
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-111</property>
+Hongqian Rong
+</property>
   </object>
   <object class="GtkWindow" id="window">
     <property name="visible">True</property>
@@ -159,10 +147,10 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
-                  <object class="GtkImage" id="image1">
+                  <object class="GtkLabel" id="label2">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="stock">gtk-about</property>
+                    <property name="label" translatable="yes">DeltaT2</property>
                   </object>
                 </child>
               </object>
@@ -192,30 +180,6 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
                   <object class="GtkDrawingArea" id="drawingarea1">
                     <property name="width_request">300</property>
                     <property name="height_request">300</property>
@@ -228,6 +192,15 @@
                     <property name="width">1</property>
                     <property name="height">1</property>
                   </packing>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
                 </child>
               </object>
               <packing>
@@ -244,10 +217,30 @@
               <placeholder/>
             </child>
             <child>
-              <placeholder/>
+              <object class="GtkLabel" id="label1">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">DeltaT1</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">0</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
             </child>
             <child>
-              <placeholder/>
+              <object class="GtkLabel" id="label3">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">DeltaT3</property>
+              </object>
+              <packing>
+                <property name="left_attach">2</property>
+                <property name="top_attach">0</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
             </child>
           </object>
           <packing>
