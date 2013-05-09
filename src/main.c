@@ -22,12 +22,18 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 
+#include <cairo.h>
+#include <math.h>
+
 #include <glib/gi18n.h>
 #include <gio/gio.h>
 
 struct private{
 
 	/* ANJUTA: Widgets declaration for gtk_foobar.ui - DO NOT REMOVE */
+	GtkWidget* entrybuffer2;
+	GtkWidget* entry2;
+	GtkWidget* drawingarea1;
 	GtkWidget* label2;
 	GtkWidget* label3;
 	GtkWidget* label1;
@@ -64,6 +70,75 @@ void
 destroy (GtkWidget *widget, gpointer data)
 {
 	gtk_main_quit ();
+}
+
+gboolean
+draw_callback (GtkWidget *widget, cairo_t *cr, gpointer data)
+{
+	guint width, height; 
+	int i, j;
+	//GRand *rand1;
+
+	gdouble a, b, c, x_offs, y_offs;
+	gdouble node_x[4], node_y[4]; 
+	
+	c = g_ascii_strtod (gtk_entry_buffer_get_text 
+	                    ((GtkEntryBuffer*)priv->entrybuffer2), 
+	                    NULL) / 2;
+	
+	GdkRGBA color = {1.0,0.0,0.0,1.0};
+	
+	//rand1 = g_rand_new ();
+	//color.green = g_rand_double_range (rand1, 0.0, 1.0);
+	//color.blue = g_rand_double_range (rand1, 0.0, 1.0);
+
+	width = gtk_widget_get_allocated_width (widget);
+	height = gtk_widget_get_allocated_height (widget);
+	x_offs = width /2;
+	y_offs = height /2;
+
+	node_x[0] = width - 100; node_y[0] = 100;
+	node_x[1] = 100; node_y[1] = 100;
+	node_x[2] = 100; node_y[2] = height - 100;
+	node_x[3] = width - 100; node_y[3] = height - 100;
+	
+	gdk_cairo_set_source_rgba (cr, &color);
+	cairo_arc (cr,
+             node_x[0], node_y[0],
+             10,
+             0, 2 * G_PI);
+	cairo_fill (cr);
+	
+	color.green = 0.5;
+	gdk_cairo_set_source_rgba (cr, &color);
+
+	for(j=1; j<4; j++){		
+		cairo_arc (cr, node_x[j], node_y[j], 10, 0, 2 * G_PI);
+		cairo_fill (cr);
+	}
+	
+
+  //gtk_style_context_get_color (gtk_widget_get_style_context (widget),
+  //                             0,
+  //                             &color);
+	color.blue = 0.5;
+	color.green = 1.0;
+	color.red = 0.0;
+	gdk_cairo_set_source_rgba (cr, &color);
+
+	for(i = -node_x[j]; i <(501 - node_x[j]); i += 16){
+		cairo_curve_to (cr, i + 100, -sqrt(i * i + 10000) + y_offs, 
+		                i + 108, -sqrt((i + 8) * (i + 8) + 10000) + y_offs,
+		                i + 116, -sqrt((i + 16) * (i + 16) + 10000) + y_offs);
+		
+	}
+		
+	//cairo_curve_to (cr, 10, 10, 20, 30, 30, 10);
+	//cairo_curve_to (cr, 0, 0, 40, 30, 300, c);
+
+	cairo_stroke (cr);
+
+ return FALSE;
 }
 
 gboolean displayError(gpointer data)
@@ -183,6 +258,8 @@ textviewFiller(gpointer data)
 						                 ((int)reported[4]-(int)reported[2]) : 
 							             ((int)reported[4]-(int)reported[2] - 256)) * 256; 
 						event_time[i] += (float)reported[3] + (float)time_shift/2;
+						event_time[i] /= 7575;
+						event_time[i] *= 340;
 						
 						status_char++;
 						break;
@@ -239,7 +316,7 @@ doClick (GtkWidget *widget, gpointer data)
 {
 	
 	//static GThread* textFillerThread = NULL;
-	
+	//gtk_widget_queue_draw_area (priv->drawingarea1, 100, 0, 300, 300);
 	if(gtk_toggle_button_get_active ((GtkToggleButton*)priv->on_off_button)){
 		const GdkRGBA green = {0.0,1.0,0.0,0.2};
 	
@@ -252,6 +329,7 @@ doClick (GtkWidget *widget, gpointer data)
 		                                     &green);
 
 		gtk_spinner_start ((GtkSpinner*)priv->spinner1);
+		//gtk_widget_set_sensitive (priv->entry2, FALSE);
 		
 		g_thread_new ("Text View Filler", textviewFiller, NULL);
 		
@@ -268,6 +346,7 @@ doClick (GtkWidget *widget, gpointer data)
 		                                     &red);
 
 		gtk_spinner_stop ((GtkSpinner*)priv->spinner1);
+		//gtk_widget_set_sensitive (priv->entry2, TRUE);
 		
 		g_thread_new ("Cancel", doCancel, NULL); 
 	}
@@ -307,6 +386,9 @@ create_window (void)
 	priv = g_malloc(sizeof(struct private));
 	
 	/* ANJUTA: Widgets initialization for gtk_foobar.ui - DO NOT REMOVE */
+	priv->entrybuffer2 = GTK_WIDGET (gtk_builder_get_object(builder, "entrybuffer2"));
+	priv->entry2 = GTK_WIDGET (gtk_builder_get_object(builder, "entry2"));
+	priv->drawingarea1 = GTK_WIDGET (gtk_builder_get_object(builder, "drawingarea1"));
 	priv->label2 = GTK_WIDGET (gtk_builder_get_object(builder, "label2"));
 	priv->label3 = GTK_WIDGET (gtk_builder_get_object(builder, "label3"));
 	priv->label1 = GTK_WIDGET (gtk_builder_get_object(builder, "label1"));
