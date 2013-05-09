@@ -79,10 +79,10 @@ draw_callback (GtkWidget *widget, cairo_t *cr, gpointer data)
 	int i, j;
 	//GRand *rand1;
 
-	gdouble a, b, c, x_offs, y_offs;
+	gdouble a = 1.0, b, c, c_phy, x_offs, y_offs;
 	gdouble node_x[4], node_y[4]; 
 	
-	c = g_ascii_strtod (gtk_entry_buffer_get_text 
+	c_phy = g_ascii_strtod (gtk_entry_buffer_get_text 
 	                    ((GtkEntryBuffer*)priv->entrybuffer2), 
 	                    NULL) / 2;
 	
@@ -94,8 +94,14 @@ draw_callback (GtkWidget *widget, cairo_t *cr, gpointer data)
 
 	width = gtk_widget_get_allocated_width (widget);
 	height = gtk_widget_get_allocated_height (widget);
-	x_offs = width /2;
-	y_offs = height /2;
+
+	//c *= (width - 200);
+	//a *= (width - 200);
+
+	c = width - 200;
+	
+	x_offs = width / 2;
+	y_offs = height / 2;
 
 	node_x[0] = width - 100; node_y[0] = 100;
 	node_x[1] = 100; node_y[1] = 100;
@@ -126,17 +132,28 @@ draw_callback (GtkWidget *widget, cairo_t *cr, gpointer data)
 	color.red = 0.0;
 	gdk_cairo_set_source_rgba (cr, &color);
 
-	for(i = -node_x[1]; i <(501 - node_x[1]); i += 16){
-		cairo_curve_to (cr, i + 100, -sqrt(i * i + 10000) + y_offs, 
-		                i + 108, -sqrt((i + 8) * (i + 8) + 10000) + y_offs,
-		                i + 116, -sqrt((i + 16) * (i + 16) + 10000) + y_offs);
+	for (j = 0; j<2 ;j++){
+
+		a = (1.0 / c_phy) * (width - 200);
 		
+		if(c > a){
+			b = sqrt((c * c) - (a * a));
+		}
+		else{
+			continue;
+		}
+		for(i = -node_x[j]; i <(501 - node_x[j]); i += 9){
+			cairo_curve_to (cr, i + node_x[j], a * sqrt((i / b) * (i / b) + 1) + y_offs, 
+				            i + node_x[j] + 3, a * sqrt(((i + 3) / b) * ((i + 3) / b) + 1) + y_offs,
+				            i + node_x[j] + 6, a * sqrt(((i + 6) / b) * ((i + 6) / b) + 1) + y_offs);
+		
+		}
+		cairo_stroke (cr);
 	}
-		
 	//cairo_curve_to (cr, 10, 10, 20, 30, 30, 10);
 	//cairo_curve_to (cr, 0, 0, 40, 30, 300, c);
 
-	cairo_stroke (cr);
+	
 
  return FALSE;
 }

@@ -4,7 +4,9 @@
   <object class="GtkEntryBuffer" id="entrybuffer1">
     <property name="text" translatable="yes">Choose a USB ACM device from combo box and press activate.</property>
   </object>
-  <object class="GtkEntryBuffer" id="entrybuffer2"/>
+  <object class="GtkEntryBuffer" id="entrybuffer2">
+    <property name="text" translatable="yes">2.0</property>
+  </object>
   <object class="GtkTextBuffer" id="textbuffer1">
     <property name="text" translatable="yes">
 Beijing University of Posts and Telecommunications
