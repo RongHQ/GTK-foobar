@@ -84,7 +84,7 @@ draw_callback (GtkWidget *widget, cairo_t *cr, gpointer data)
 	
 	c_phy = g_ascii_strtod (gtk_entry_buffer_get_text 
 	                    ((GtkEntryBuffer*)priv->entrybuffer2), 
-	                    NULL) / 2;
+	                    NULL) ;
 	
 	GdkRGBA color = {1.0,0.0,0.0,1.0};
 	
@@ -98,7 +98,7 @@ draw_callback (GtkWidget *widget, cairo_t *cr, gpointer data)
 	//c *= (width - 200);
 	//a *= (width - 200);
 
-	c = width - 200;
+	c = (width - 200) / 2;
 	
 	x_offs = width / 2;
 	y_offs = height / 2;
@@ -135,6 +135,7 @@ draw_callback (GtkWidget *widget, cairo_t *cr, gpointer data)
 	for (j = 0; j<2 ;j++){
 
 		a = (1.0 / c_phy) * (width - 200);
+		a /= 2;
 		
 		if(c > a){
 			b = sqrt((c * c) - (a * a));

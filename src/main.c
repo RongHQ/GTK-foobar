@@ -98,7 +98,7 @@ draw_callback (GtkWidget *widget, cairo_t *cr, gpointer data)
 	//c *= (width - 200);
 	//a *= (width - 200);
 
-	c = width - 200;
+	c = (width - 200) / 2;
 	
 	x_offs = width / 2;
 	y_offs = height / 2;
@@ -135,6 +135,7 @@ draw_callback (GtkWidget *widget, cairo_t *cr, gpointer data)
 	for (j = 0; j<2 ;j++){
 
 		a = (1.0 / c_phy) * (width - 200);
+		a /= 2;
 		
 		if(c > a){
 			b = sqrt((c * c) - (a * a));
@@ -146,6 +147,26 @@ draw_callback (GtkWidget *widget, cairo_t *cr, gpointer data)
 			cairo_curve_to (cr, i + node_x[j], a * sqrt((i / b) * (i / b) + 1) + y_offs, 
 				            i + node_x[j] + 3, a * sqrt(((i + 3) / b) * ((i + 3) / b) + 1) + y_offs,
 				            i + node_x[j] + 6, a * sqrt(((i + 6) / b) * ((i + 6) / b) + 1) + y_offs);
+		
+		}
+		cairo_stroke (cr);
+	}
+
+	for (j = 2; j<4 ;j++){
+
+		a = (1.0 / c_phy) * (width - 200);
+		a /= 2;
+		
+		if(c > a){
+			b = sqrt((c * c) - (a * a));
+		}
+		else{
+			continue;
+		}
+		for(i = -node_x[j]; i <(501 - node_x[j]); i += 9){
+			cairo_curve_to (cr, a * sqrt((i / b) * (i / b) + 1) + y_offs, i + node_x[j], 
+				            a * sqrt(((i + 3) / b) * ((i + 3) / b) + 1) + y_offs, i + node_x[j] + 3,
+				            a * sqrt(((i + 6) / b) * ((i + 6) / b) + 1) + y_offs, i + node_x[j] + 6);
 		
 		}
 		cairo_stroke (cr);
