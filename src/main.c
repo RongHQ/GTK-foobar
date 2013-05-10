@@ -52,6 +52,7 @@ struct private{
 static struct private* priv = NULL;
 
 int addr_book[4] = {0x8c10, 0x8d62, 0x8bb3, 0x8de4};
+float event_time[4];
 GCancellable *mainCanceller;
 
 /* For testing propose use the local (not installed) ui file */
@@ -79,7 +80,7 @@ draw_callback (GtkWidget *widget, cairo_t *cr, gpointer data)
 	int i, j;
 	//GRand *rand1;
 
-	gdouble a = 1.0, b, c, c_phy, x_offs, y_offs;
+	gdouble a = 1.0, b, c, c_phy, x_offs, y_offs, twoa_measured[4];
 	gdouble node_x[4], node_y[4]; 
 	
 	c_phy = g_ascii_strtod (gtk_entry_buffer_get_text 
@@ -132,9 +133,14 @@ draw_callback (GtkWidget *widget, cairo_t *cr, gpointer data)
 	color.red = 0.0;
 	gdk_cairo_set_source_rgba (cr, &color);
 
+	twoa_measured[0] = event_time[0] - event_time[3];
+	twoa_measured[1] = event_time[1] - event_time[2];
+	twoa_measured[2] = event_time[1] - event_time[0];
+	twoa_measured[3] = event_time[2] - event_time[3];
+
 	for (j = 0; j<2 ;j++){
 
-		a = (1.0 / c_phy) * (width - 200);
+		a = (twoa_measured[j] / c_phy) * (width - 200);
 		a /= 2;
 		
 		if(c > a){
@@ -154,7 +160,7 @@ draw_callback (GtkWidget *widget, cairo_t *cr, gpointer data)
 
 	for (j = 2; j<4 ;j++){
 
-		a = (1.0 / c_phy) * (width - 200);
+		a = (twoa_measured[j] / c_phy) * (width - 200);
 		a /= 2;
 		
 		if(c > a){
@@ -249,7 +255,7 @@ textviewFiller(gpointer data)
 	unsigned int addr = -1, reported[5];
 	char status_char = 0;
 	int i, time_shift;
-	float event_time[4];
+	
 
 	USBsink = g_file_new_for_path (gtk_combo_box_text_get_active_text((GtkComboBoxText*)priv->comboboxtext2));
 	USBsinkInStream = g_file_read (USBsink, NULL, &USBerror);
@@ -319,6 +325,7 @@ textviewFiller(gpointer data)
 					gtk_label_set_text ((GtkLabel*)priv->label3, 
 					                    g_ascii_dtostr (buffer, G_ASCII_DTOSTR_BUF_SIZE, 
 					                                    event_time[3] - event_time[0]));
+					gtk_widget_queue_draw_area (priv->drawingarea1, 0, 0, 510, 510);
 					
 				}
 				
