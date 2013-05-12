@@ -31,6 +31,7 @@
 struct private{
 
 	/* ANJUTA: Widgets declaration for gtk_foobar.ui - DO NOT REMOVE */
+	GtkWidget* adjustment1;
 	GtkWidget* entrybuffer2;
 	GtkWidget* entry2;
 	GtkWidget* drawingarea1;
@@ -136,7 +137,7 @@ draw_callback (GtkWidget *widget, cairo_t *cr, gpointer data)
 	twoa_measured[0] = event_time[0] - event_time[3];
 	twoa_measured[1] = event_time[1] - event_time[2];
 	twoa_measured[2] = event_time[1] - event_time[0];
-	twoa_measured[3] = event_time[2] - event_time[2];
+	twoa_measured[3] = event_time[2] - event_time[3];
 
 	for (j = 0; j<2 ;j++){
 
@@ -170,9 +171,9 @@ draw_callback (GtkWidget *widget, cairo_t *cr, gpointer data)
 			continue;
 		}
 		for(i = -node_x[j]; i <(501 - node_x[j]); i += 9){
-			cairo_curve_to (cr, a * sqrt((i / b) * (i / b) + 1) + y_offs, i + node_x[j], 
-				            a * sqrt(((i + 3) / b) * ((i + 3) / b) + 1) + y_offs, i + node_x[j] + 3,
-				            a * sqrt(((i + 6) / b) * ((i + 6) / b) + 1) + y_offs, i + node_x[j] + 6);
+			cairo_curve_to (cr, a * sqrt((i / b) * (i / b) + 1) + x_offs, i + node_x[j], 
+				            a * sqrt(((i + 3) / b) * ((i + 3) / b) + 1) + x_offs, i + node_x[j] + 3,
+				            a * sqrt(((i + 6) / b) * ((i + 6) / b) + 1) + x_offs, i + node_x[j] + 6);
 		
 		}
 		cairo_stroke (cr);
@@ -314,18 +315,18 @@ textviewFiller(gpointer data)
 				}
 
 				if(status_char == 4){
-					gchar buffer[G_ASCII_DTOSTR_BUF_SIZE];
+					//gchar buffer[G_ASCII_DTOSTR_BUF_SIZE];
 					
-					gtk_label_set_text ((GtkLabel*)priv->label1, 
-					                    g_ascii_dtostr (buffer, G_ASCII_DTOSTR_BUF_SIZE, 
-					                                    event_time[1] - event_time[0]));
-					gtk_label_set_text ((GtkLabel*)priv->label2, 
-					                    g_ascii_dtostr (buffer, G_ASCII_DTOSTR_BUF_SIZE, 
-					                                    event_time[2] - event_time[0]));
-					gtk_label_set_text ((GtkLabel*)priv->label3, 
-					                    g_ascii_dtostr (buffer, G_ASCII_DTOSTR_BUF_SIZE, 
-					                                    event_time[3] - event_time[0]));
-					gtk_widget_queue_draw_area (priv->drawingarea1, 0, 0, 510, 510);
+					//gtk_label_set_text ((GtkLabel*)priv->label1, 
+					//                    g_ascii_dtostr (buffer, G_ASCII_DTOSTR_BUF_SIZE, 
+					//                                    event_time[1] - event_time[0]));
+					//gtk_label_set_text ((GtkLabel*)priv->label2, 
+					//                    g_ascii_dtostr (buffer, G_ASCII_DTOSTR_BUF_SIZE, 
+					//                                    event_time[2] - event_time[0]));
+					//gtk_label_set_text ((GtkLabel*)priv->label3, 
+					//                    g_ascii_dtostr (buffer, G_ASCII_DTOSTR_BUF_SIZE, 
+					//                                    event_time[3] - event_time[0]));
+					gtk_widget_queue_draw(priv->drawingarea1);
 					
 				}
 				
@@ -356,10 +357,49 @@ textviewFiller(gpointer data)
 	
 }
 
+gboolean doPress (GtkWidget *widget, GdkEvent  *event, gpointer   user_data) 
+{
+	GtkTextIter iter1;
+	char xytext[21];
+	static gdouble x_meter, y_meter, c_phy;
+	
+	if(event->type == GDK_BUTTON_PRESS){
+		c_phy = g_ascii_strtod (gtk_entry_buffer_get_text 
+	               		((GtkEntryBuffer*)priv->entrybuffer2), 
+	           			 NULL) ;
+	
+		x_meter = ((((GdkEventButton*)event)->x - 255) / 310) * c_phy;
+		y_meter = - ((((GdkEventButton*)event)->y - 255) / 310) * c_phy;
+
+		g_sprintf(xytext, "x:%3.3f, y:%3.3f\n", x_meter, y_meter);
+		//fflush(stdout);
+
+		gtk_text_buffer_get_end_iter ((GtkTextBuffer*)priv->textbuffer1, &iter1);
+		gtk_text_buffer_insert((GtkTextBuffer*)priv->textbuffer1, 
+		                		&iter1, 
+	                     		xytext,
+	                     		-1);
+	}
+	else if(event->type == GDK_MOTION_NOTIFY){
+		x_meter = ((((GdkEventMotion*)event)->x - 255) / 310) * c_phy;
+		y_meter = - ((((GdkEventMotion*)event)->y - 255) / 310) * c_phy;
+
+		g_sprintf(xytext, "x:%3.3f", x_meter);
+		gtk_label_set_text ((GtkLabel*)priv->label1, 
+							xytext);
+
+		g_sprintf(xytext, "y:%3.3f", y_meter);
+		gtk_label_set_text ((GtkLabel*)priv->label2, 
+							xytext);	
+	}
+	
+	return FALSE;
+}
+
 void
 doClick (GtkWidget *widget, gpointer data)
 {
-	
+	GtkTextIter iter1;
 	//static GThread* textFillerThread = NULL;
 	//gtk_widget_queue_draw_area (priv->drawingarea1, 100, 0, 300, 300);
 	if(gtk_toggle_button_get_active ((GtkToggleButton*)priv->on_off_button)){
@@ -383,7 +423,9 @@ doClick (GtkWidget *widget, gpointer data)
 		const GdkRGBA red = {1.0,0.0,0.0,0.2};
 		g_printf("Off!");
 
-		gtk_text_buffer_insert_at_cursor((GtkTextBuffer*)priv->textbuffer1, 
+		gtk_text_buffer_get_end_iter ((GtkTextBuffer*)priv->textbuffer1, &iter1);
+		gtk_text_buffer_insert((GtkTextBuffer*)priv->textbuffer1, 
+		                       &iter1, 
 	                     	   "*****Stop!*****\r\n",
 	                     	   -1);
 		gtk_widget_override_background_color(priv->textview1, 
@@ -431,6 +473,7 @@ create_window (void)
 	priv = g_malloc(sizeof(struct private));
 	
 	/* ANJUTA: Widgets initialization for gtk_foobar.ui - DO NOT REMOVE */
+	priv->adjustment1 = GTK_WIDGET (gtk_builder_get_object(builder, "adjustment1"));
 	priv->entrybuffer2 = GTK_WIDGET (gtk_builder_get_object(builder, "entrybuffer2"));
 	priv->entry2 = GTK_WIDGET (gtk_builder_get_object(builder, "entry2"));
 	priv->drawingarea1 = GTK_WIDGET (gtk_builder_get_object(builder, "drawingarea1"));
