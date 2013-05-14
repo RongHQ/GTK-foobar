@@ -31,6 +31,7 @@
 struct private{
 
 	/* ANJUTA: Widgets declaration for gtk_foobar.ui - DO NOT REMOVE */
+	GtkWidget* adjustment2;
 	GtkWidget* spinbutton1;
 	GtkWidget* adjustment1;
 	GtkWidget* entrybuffer2;
@@ -53,7 +54,9 @@ struct private{
 static struct private* priv = NULL;
 
 int addr_book[4] = {0x8c10, 0x8d62, 0x8bb3, 0x8de4};
-float event_time[4];
+float event_time[50][4];
+int event_time_now=0;
+int event_time_disp=0;
 GCancellable *mainCanceller;
 
 /* For testing propose use the local (not installed) ui file */
@@ -134,10 +137,10 @@ draw_callback (GtkWidget *widget, cairo_t *cr, gpointer data)
 	color.red = 0.0;
 	gdk_cairo_set_source_rgba (cr, &color);
 
-	twoa_measured[0] = event_time[0] - event_time[3];
-	twoa_measured[1] = event_time[1] - event_time[2];
-	twoa_measured[2] = event_time[1] - event_time[0];
-	twoa_measured[3] = event_time[2] - event_time[3];
+	twoa_measured[0] = event_time[event_time_disp][0] - event_time[event_time_disp][3];
+	twoa_measured[1] = event_time[event_time_disp][1] - event_time[event_time_disp][2];
+	twoa_measured[2] = event_time[event_time_disp][1] - event_time[event_time_disp][0];
+	twoa_measured[3] = event_time[event_time_disp][2] - event_time[event_time_disp][3];
 
 	for (j = 0; j<2 ;j++){
 
@@ -246,7 +249,7 @@ textviewFiller(gpointer data)
 {
 	static GFileInputStream* USBsinkInStream;
 	
-	
+	GtkTextIter iter1;
 	GError* USBerror = NULL;
 	GDataInputStream* USBsinkDataInStream; 
 	gsize linesize;
@@ -272,9 +275,11 @@ textviewFiller(gpointer data)
 	gdk_threads_add_idle (displayPlayIcon, NULL);
 
 	gdk_threads_enter ();
-	gtk_text_buffer_set_text((GtkTextBuffer*)priv->textbuffer1, 
-	                    	     "Start!\r\n",
-		                         -1);
+	gtk_text_buffer_get_end_iter ((GtkTextBuffer*)priv->textbuffer1, &iter1);
+	gtk_text_buffer_insert((GtkTextBuffer*)priv->textbuffer1, 
+		                   &iter1, 
+	                 	   "*****Start!*****\r\n",
+	                       -1);
 	gdk_threads_leave ();
 	
 	do{
@@ -285,6 +290,8 @@ textviewFiller(gpointer data)
 			gtk_text_buffer_insert_at_cursor((GtkTextBuffer*)priv->textbuffer1, 
 	                     					linedata,
 		                     				linesize);
+			gtk_adjustment_set_value ((GtkAdjustment*)priv->adjustment1, 
+			                          gtk_adjustment_get_upper ((GtkAdjustment*)priv->adjustment1));
 
 			if(g_str_has_prefix(linedata, "Sync")){
 				status_char = 0;
@@ -299,12 +306,12 @@ textviewFiller(gpointer data)
 
 				for(i = 0; i<4; i++){
 					if(addr == addr_book[i]){
-						event_time[i] = ((reported[4] < reported[2]) ? 
+						event_time[event_time_now][i] = ((reported[4] < reported[2]) ? 
 						                 ((int)reported[4]-(int)reported[2]) : 
 							             ((int)reported[4]-(int)reported[2] - 256)) * 256; 
-						event_time[i] += (float)reported[3] + (float)time_shift/2;
-						event_time[i] /= 7575;
-						event_time[i] *= 340;
+						event_time[event_time_now][i] += (float)reported[3] + (float)time_shift/2;
+						event_time[event_time_now][i] /= 7575;
+						event_time[event_time_now][i] *= 340;
 						
 						status_char++;
 						break;
@@ -326,7 +333,20 @@ textviewFiller(gpointer data)
 					//gtk_label_set_text ((GtkLabel*)priv->label3, 
 					//                    g_ascii_dtostr (buffer, G_ASCII_DTOSTR_BUF_SIZE, 
 					//                                    event_time[3] - event_time[0]));
-					gtk_widget_queue_draw(priv->drawingarea1);
+					event_time_disp = event_time_now;
+					
+					if(gtk_adjustment_get_upper((GtkAdjustment*)priv->adjustment2)<49){
+						gtk_adjustment_set_upper((GtkAdjustment*)priv->adjustment2, event_time_now);
+					}
+					
+					if(event_time_now == 49){
+						event_time_now = 0;
+					}
+					else{
+						event_time_now++;
+					}
+					gtk_adjustment_set_value((GtkAdjustment*)priv->adjustment2, event_time_disp);
+					//gtk_widget_queue_draw(priv->drawingarea1);
 					
 				}
 				
@@ -357,7 +377,8 @@ textviewFiller(gpointer data)
 	
 }
 
-gboolean doPress (GtkWidget *widget, GdkEvent  *event, gpointer   user_data) 
+gboolean 
+doPress (GtkWidget *widget, GdkEvent  *event, gpointer   user_data) 
 {
 	GtkTextIter iter1;
 	char xytext[21];
@@ -379,6 +400,8 @@ gboolean doPress (GtkWidget *widget, GdkEvent  *event, gpointer   user_data)
 		                		&iter1, 
 	                     		xytext,
 	                     		-1);
+		gtk_adjustment_set_value ((GtkAdjustment*)priv->adjustment1, 
+		                          gtk_adjustment_get_upper ((GtkAdjustment*)priv->adjustment1));
 	}
 	else if(event->type == GDK_MOTION_NOTIFY){
 		x_meter = ((((GdkEventMotion*)event)->x - 255) / 310) * c_phy;
@@ -394,6 +417,15 @@ gboolean doPress (GtkWidget *widget, GdkEvent  *event, gpointer   user_data)
 	}
 	
 	return FALSE;
+}
+
+void
+doValue (GtkSpinButton *spinbutton, gpointer user_data)
+{
+	
+	event_time_disp = gtk_spin_button_get_value_as_int (spinbutton);
+	gtk_widget_queue_draw(priv->drawingarea1);
+	
 }
 
 void
@@ -473,6 +505,7 @@ create_window (void)
 	priv = g_malloc(sizeof(struct private));
 	
 	/* ANJUTA: Widgets initialization for gtk_foobar.ui - DO NOT REMOVE */
+	priv->adjustment2 = GTK_WIDGET (gtk_builder_get_object(builder, "adjustment2"));
 	priv->spinbutton1 = GTK_WIDGET (gtk_builder_get_object(builder, "spinbutton1"));
 	priv->adjustment1 = GTK_WIDGET (gtk_builder_get_object(builder, "adjustment1"));
 	priv->entrybuffer2 = GTK_WIDGET (gtk_builder_get_object(builder, "entrybuffer2"));

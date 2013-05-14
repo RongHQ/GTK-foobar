@@ -7,7 +7,6 @@
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="adjustment2">
-    <property name="upper">100</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
@@ -266,7 +265,7 @@ between nodes(m):</property>
             </child>
             <child>
               <object class="GtkSpinner" id="spinner1">
-                <property name="height_request">30</property>
+                <property name="height_request">20</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="active">True</property>
@@ -303,6 +302,8 @@ between nodes(m):</property>
                     <property name="adjustment">adjustment2</property>
                     <property name="climb_rate">1</property>
                     <property name="snap_to_ticks">True</property>
+                    <property name="wrap">True</property>
+                    <signal name="value-changed" handler="doValue" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">False</property>
