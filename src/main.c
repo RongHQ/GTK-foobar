@@ -31,12 +31,12 @@
 struct private{
 
 	/* ANJUTA: Widgets declaration for gtk_foobar.ui - DO NOT REMOVE */
+	GtkWidget* spinbutton1;
 	GtkWidget* adjustment1;
 	GtkWidget* entrybuffer2;
 	GtkWidget* entry2;
 	GtkWidget* drawingarea1;
 	GtkWidget* label2;
-	GtkWidget* label3;
 	GtkWidget* label1;
 	GtkWidget* spinner1;
 	GtkWidget* comboboxtext_entry;
@@ -473,12 +473,12 @@ create_window (void)
 	priv = g_malloc(sizeof(struct private));
 	
 	/* ANJUTA: Widgets initialization for gtk_foobar.ui - DO NOT REMOVE */
+	priv->spinbutton1 = GTK_WIDGET (gtk_builder_get_object(builder, "spinbutton1"));
 	priv->adjustment1 = GTK_WIDGET (gtk_builder_get_object(builder, "adjustment1"));
 	priv->entrybuffer2 = GTK_WIDGET (gtk_builder_get_object(builder, "entrybuffer2"));
 	priv->entry2 = GTK_WIDGET (gtk_builder_get_object(builder, "entry2"));
 	priv->drawingarea1 = GTK_WIDGET (gtk_builder_get_object(builder, "drawingarea1"));
 	priv->label2 = GTK_WIDGET (gtk_builder_get_object(builder, "label2"));
-	priv->label3 = GTK_WIDGET (gtk_builder_get_object(builder, "label3"));
 	priv->label1 = GTK_WIDGET (gtk_builder_get_object(builder, "label1"));
 	priv->spinner1 = GTK_WIDGET (gtk_builder_get_object(builder, "spinner1"));
 	priv->comboboxtext_entry = GTK_WIDGET (gtk_builder_get_object(builder, "comboboxtext_entry"));
